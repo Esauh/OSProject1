@@ -8,7 +8,6 @@
 #include <signal.h>
 //Esau Hutcherson
 //Reference code: https://www.geeksforgeeks.org/making-linux-shell-c/
-
 #define MAX_COMMAND_LINE_LEN 1024
 #define MAX_COMMAND_LINE_ARGS 128
 
