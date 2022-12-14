@@ -11,7 +11,6 @@
 
 #define MAX_COMMAND_LINE_LEN 1024
 #define MAX_COMMAND_LINE_ARGS 128
-
 char prompt[] = "> ";
 char delimiters[] = " \t\r\n";
 extern char **environ;
@@ -40,17 +39,15 @@ int main() {
       wdp = getcwd(wd, wd_size);
       printf("%s %s", wdp, prompt);
       fflush(stdout);
-
       if ((fgets(command_line, MAX_COMMAND_LINE_LEN, stdin) == NULL) && ferror(stdin)) {
         fprintf(stderr, "fgets error");
         exit(0);
       }
-    } while(command_line[0] == 0x0A);
 
+    } while(command_line[0] == 0x0A);
     if (feof(stdin)) {
       codeExit(0);
     }
-
     arguments[0] = strtok(command_line, delimiters);
     a=0;
     while(arguments[a] != NULL) {
@@ -66,7 +63,6 @@ int main() {
       arguments[a-1] = NULL;
     }
     
-    // Builtin Commands
     if (strcmp(arguments[0],"cd")==0){
       chdir(arguments[1]);
     } else if (strcmp(arguments[0],"pwd")==0){
@@ -94,7 +90,9 @@ int main() {
         printf("%s\n", *env);
       }
     }
-    else if (strcmp(arguments[0],"setenv")==0) {
+
+    else if (strcmp(arguments[0],"setenv")==0) 
+    {
       char* temp[2];
       temp[0] = strtok(arguments[1], "=");
       a=0;
@@ -102,20 +100,26 @@ int main() {
         a++;
         temp[a] = strtok(NULL, "=");
       }
-      if (temp[0] == NULL || temp[1] == NULL){
+
+      if (temp[0] == NULL || temp[1] == NULL)
+      {
         codeExit(1);
+
       }
       setenv(temp[0], temp[1], 1);
     }
     // Executing CLI commands
     else {
       int pid = fork();
-      if (pid == 0){
+      if (pid == 0)
+      {
         signal(SIGINT, SIG_DFL);
         exeCmd(arguments);
         exit(0);
-      } else {
-        if (run_in_background){
+      } else 
+      {
+        if (run_in_background)
+        {
           cmd_pid = -1;
         } else {
           cmd_pid = pid;
@@ -124,7 +128,8 @@ int main() {
             signal(SIGINT, SIG_DFL);
             processTime(10000, pid);
             exit(0);
-          } else {
+          } else 
+          {
             waitpid(pid, NULL, 0);
             kill(kpid, SIGINT);
             waitpid(kpid, NULL, 0);
@@ -136,27 +141,32 @@ int main() {
   return -1;
 }
 
-void processTime(int time, int pid) {
+void processTime(int time, int pid) 
+{
   sleep(time);
   printf("Foreground process timed out.\n");
   kill(pid, SIGINT);
 }
 
-void quoteRemoval(char* token) {
+void quoteRemoval(char* token) 
+{
   bool quotes = false;
   char first;
   char last;
-  if (token[0]=='\"' || token[0]=='\''){
+  if (token[0]=='\"' || token[0]=='\'')
+  {
     first = token[0];
     quotes = true;
   }
   if (quotes){
     int a=0;
-    while (token[a]!='\0'){
+    while (token[a]!='\0')
+    {
       last = token[a];
       a++;
     }
-    if (first == last) { 
+    if (first == last) 
+    { 
       a=1;
       while (token[a]!='\0') {
         token[a-1] = token[a];
@@ -171,27 +181,25 @@ void quoteRemoval(char* token) {
 void exeCmd(char* arguments[]) {
   char* args_by_pipe[MAX_COMMAND_LINE_ARGS][MAX_COMMAND_LINE_ARGS];
   int a = 0;
-  int command_count = 0;
-  int command_token_count = 0;
+  int cmds = 0;
+  int cmdtokens = 0;
   while (arguments[a]!= NULL) {
     if (strcmp(arguments[a],"|")==0) {
-      if (command_token_count == 0) {
+      if (cmdtokens == 0) {
         printf("Invalid pipe command\n");
         return;
       }
-      args_by_pipe[command_count][command_token_count] = NULL;
-      
-      command_count++;
-      command_token_count=0;
+      args_by_pipe[cmds][cmdtokens] = NULL;
+      cmds++;
+      cmdtokens=0;
     } else {
-      args_by_pipe[command_count][command_token_count] = arguments[a];
-      command_token_count++;
+      args_by_pipe[cmds][cmdtokens] = arguments[a];
+      cmdtokens++;
     }
     a++;
   }
-  
-  int num_pipes = command_count;
-  command_count++;
+  int num_pipes = cmds;
+  cmds++;
   if (num_pipes == 0) {
     execvp(args_by_pipe[0][0],args_by_pipe[0]);
   } else {
@@ -199,8 +207,8 @@ void exeCmd(char* arguments[]) {
     for (a=0;a<num_pipes;a++) {
       pipe(pipes[a]);
     }
-    int pids[command_count];
-    for (a=0;a<command_count;a++) {
+    int pids[cmds];
+    for (a=0;a<cmds;a++) {
       pids[a]=fork();
       if (pids[a] == 0) {
         int j;
@@ -242,7 +250,7 @@ void exeCmd(char* arguments[]) {
       close(pipes[a][0]);
       close(pipes[a][1]);
     }
-    for(a = 0; a < command_count; a++) {
+    for(a = 0; a < cmds; a++) {
       wait(NULL);
     }    
   }
